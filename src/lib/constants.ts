@@ -47,6 +47,12 @@ export const SORT_OPTIONS = [
 
 export const CONTACT = {
   phone: "+2347083107256",
+  /** International format, digits only — used to build wa.me links. */
+  whatsapp: "2347083107256",
   email: "acmehomesandproperties@gmail.com",
   address: "Lagos, Nigeria",
 };
+
+/** Opens a WhatsApp chat with Acme, optionally with a message already typed. */
+export const whatsappLink = (message?: string) =>
+  `https://wa.me/${CONTACT.whatsapp}${message ? `?text=${encodeURIComponent(message)}` : ""}`;

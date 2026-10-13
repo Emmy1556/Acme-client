@@ -24,7 +24,6 @@ const AGENT_NAV: Item[] = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/dashboard/listings", label: "My Listings", icon: Building, end: true },
   { to: "/dashboard/listings/new", label: "Add Listing", icon: PlusCircle },
-  { to: "/dashboard/inquiries", label: "Enquiries", icon: Inbox },
   { to: "/dashboard/profile", label: "Profile", icon: UserCog },
 ];
 

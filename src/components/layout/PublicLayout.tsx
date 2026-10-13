@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration } from "react-router";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { WhatsAppFloat } from "@/components/WhatsAppButton";
 
 export function PublicLayout() {
   return (
@@ -10,6 +11,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
+      <WhatsAppFloat />
       <ScrollRestoration />
     </div>
   );

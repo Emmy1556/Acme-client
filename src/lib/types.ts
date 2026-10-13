@@ -49,7 +49,10 @@ export interface Property {
   titleDocument?: string;
   features: string[];
   images: { url: string; publicId?: string }[];
-  owner: PropertyOwner | string;
+  /** Only present on admin dashboard responses — public pages never receive it. */
+  owner?: PropertyOwner | string;
+  /** Only on an agent's own listings: how many enquiries Acme received for it. */
+  inquiryCount?: number;
   status: ApprovalStatus;
   rejectionReason?: string;
   isFeatured: boolean;

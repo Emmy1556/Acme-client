@@ -39,7 +39,15 @@ export default function AgentOverview() {
         <StatCard label="Pending review" value={s.pending ?? 0} icon={Clock} tone="gold" />
         <StatCard label="Rejected" value={s.rejected ?? 0} icon={XCircle} tone="red" />
         <StatCard label="Total views" value={stats?.listings.totalViews ?? 0} icon={Eye} tone="gray" />
-        <StatCard label="New enquiries" value={stats?.newInquiries ?? 0} icon={Inbox} tone="gold" />
+        <StatCard label="Enquiries received" value={stats?.inquiries ?? 0} icon={Inbox} tone="gold" />
+      </div>
+
+      <div className="mt-6 flex items-start gap-3 rounded-lg bg-brand-50 p-4 text-sm text-brand-800">
+        <Inbox className="mt-0.5 size-4 shrink-0" />
+        <p>
+          Buyers and tenants contact Acme directly — by phone, WhatsApp or the enquiry form — and our team handles
+          viewings and offers for your listings. You'll see the number of enquiries each listing attracts here.
+        </p>
       </div>
 
       <div className="mb-4 mt-10 flex items-center justify-between">

@@ -40,3 +40,12 @@ src/
 ```
 
 Brand tokens (green `#014433`, gold `#F8D794`, cream, Onest font) are in `src/index.css`.
+
+## Contact details
+
+Phone, email and the WhatsApp number live in one place — `CONTACT` in `src/lib/constants.ts`.
+`whatsappLink(message)` builds the wa.me links used by the floating chat button (every public page)
+and the WhatsApp button on each property, which pre-fills the property title, price and link.
+
+Property pages show **Acme** as the only contact: the agent who listed a property is never shown to
+the public, and enquiries go to Acme's admin inbox.

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useSendInquiry } from "@/hooks/queries";
 import { errorMessage } from "@/lib/api";
 import { CONTACT } from "@/lib/constants";
+import { WhatsAppLink } from "@/components/WhatsAppButton";
 
 const empty = { name: "", email: "", phone: "", subject: "", message: "" };
 
@@ -43,6 +44,7 @@ export default function Contact() {
               </div>
             </div>
           ))}
+          <WhatsAppLink className="w-full" label="Chat with us on WhatsApp" />
         </div>
 
         <form

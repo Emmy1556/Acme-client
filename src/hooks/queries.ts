@@ -146,7 +146,7 @@ export function useAgentStats() {
   return useQuery({
     queryKey: ["stats", "agent"],
     queryFn: async () =>
-      (await api.get<Envelope<{ listings: ListingStats; newInquiries: number }>>("/stats/agent")).data.data,
+      (await api.get<Envelope<{ listings: ListingStats; inquiries: number }>>("/stats/agent")).data.data,
   });
 }
 

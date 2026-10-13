@@ -18,7 +18,7 @@ export default function Inquiries() {
 
   return (
     <>
-      <PageHeader title="Enquiries" subtitle="Messages from people interested in your properties." />
+      <PageHeader title="Enquiries" subtitle="Every enquiry from the website — property enquiries and contact-form messages." />
       <Select className="mb-4 w-44" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} aria-label="Status">
         <option value="">All</option>
         <option value="new">New</option>

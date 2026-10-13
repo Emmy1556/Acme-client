@@ -30,10 +30,10 @@ const Inquiries = page(() => import("@/pages/dashboard/Inquiries"));
 const AdminOverview = page(() => import("@/pages/admin/AdminOverview"));
 const Users = page(() => import("@/pages/admin/Users"));
 
+// Enquiries are Acme's: only the admin dashboard has that page.
 const sharedDashboardRoutes = [
   { path: "listings/new", lazy: ListingEditor },
   { path: "listings/:slug/edit", lazy: ListingEditor },
-  { path: "inquiries", lazy: Inquiries },
   { path: "profile", element: <Profile /> },
 ];
 
@@ -82,6 +82,7 @@ export const router = createBrowserRouter([
           { index: true, lazy: AdminOverview },
           { path: "listings", lazy: AdminListings },
           { path: "users", lazy: Users },
+          { path: "inquiries", lazy: Inquiries },
           ...sharedDashboardRoutes,
         ],
       },

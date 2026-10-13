@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Bath,
-  BadgeCheck,
   BedDouble,
   Car,
   CheckCircle2,
@@ -16,16 +15,19 @@ import {
   MapPin,
   Phone,
   Ruler,
+  ShieldCheck,
   Sofa,
 } from "lucide-react";
 import { useProperty, useSendInquiry } from "@/hooks/queries";
 import { errorMessage } from "@/lib/api";
 import { FALLBACK_IMAGE, LISTING_BADGE, capitalize, imageUrl, locationLabel, priceLabel } from "@/lib/format";
-import type { Property, PropertyOwner } from "@/lib/types";
+import type { Property } from "@/lib/types";
 import { Badge, EmptyState, Spinner, StatusBadge } from "@/components/ui/Feedback";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Field";
 import { PropertyCard } from "@/components/PropertyCard";
+import { WhatsAppLink } from "@/components/WhatsAppButton";
+import { CONTACT } from "@/lib/constants";
 
 function Gallery({ p }: { p: Property }) {
   const [active, setActive] = useState(0);
@@ -72,8 +74,9 @@ function Fact({ icon: Icon, label, value }: { icon: typeof Ruler; label: string;
 }
 
 function EnquiryCard({ p }: { p: Property }) {
-  const owner = typeof p.owner === "object" ? (p.owner as PropertyOwner) : undefined;
   const send = useSendInquiry();
+  const propertyUrl = typeof window === "undefined" ? "" : window.location.href;
+  const waMessage = `Hello Acme Homes, I'm interested in "${p.title}" (${priceLabel(p)}, ${locationLabel(p)}). ${propertyUrl}`;
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -83,25 +86,22 @@ function EnquiryCard({ p }: { p: Property }) {
 
   return (
     <aside className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:sticky lg:top-28">
-      {owner && (
-        <div className="mb-5 flex items-center gap-3 border-b border-gray-100 pb-5">
-          <div className="flex size-12 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-gold-300">
-            {owner.name.charAt(0)}
-          </div>
-          <div>
-            <p className="flex items-center gap-1 font-semibold text-gray-900">
-              {owner.agency || owner.name}
-              {owner.isVerified && <BadgeCheck className="size-4 text-brand-500" aria-label="Verified" />}
-            </p>
-            <p className="text-xs text-gray-500">Listed by {owner.name}</p>
-          </div>
+      <div className="mb-5 flex items-center gap-3 border-b border-gray-100 pb-5">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-600">
+          <ShieldCheck className="size-6 text-gold-300" />
         </div>
-      )}
-      {owner?.phone && (
-        <a href={`tel:${owner.phone}`} className={buttonClass("gold", "md", "mb-5 w-full")}>
-          <Phone className="size-4" /> Call {owner.phone}
+        <div>
+          <p className="font-semibold text-gray-900">Acme Homes and Properties</p>
+          <p className="text-xs text-gray-500">Speak to our team about this property</p>
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-2">
+        <a href={`tel:${CONTACT.phone}`} className={buttonClass("gold", "md", "w-full")}>
+          <Phone className="size-4" /> Call {CONTACT.phone}
         </a>
-      )}
+        <WhatsAppLink message={waMessage} className="w-full" />
+      </div>
 
       <h3 className="mb-3 flex items-center gap-2 font-semibold">
         <Mail className="size-4 text-brand-600" /> Send an enquiry
@@ -130,6 +130,9 @@ function EnquiryCard({ p }: { p: Property }) {
           Send enquiry
         </Button>
       </form>
+      <p className="mt-4 text-center text-xs text-gray-400">
+        All viewings and offers are handled by Acme Homes.
+      </p>
     </aside>
   );
 }

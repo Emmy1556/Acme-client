@@ -44,6 +44,7 @@ export function ListingsTable({ items, base, admin }: { items: Property[]; base:
               {admin && <th className="px-4 py-3 font-semibold">Owner</th>}
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Views</th>
+              {!admin && <th className="px-4 py-3 font-semibold">Enquiries</th>}
               <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
@@ -84,6 +85,7 @@ export function ListingsTable({ items, base, admin }: { items: Property[]; base:
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{p.views}</td>
+                  {!admin && <td className="px-4 py-3 text-gray-600">{p.inquiryCount ?? 0}</td>}
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       {admin && p.status !== "approved" && (
