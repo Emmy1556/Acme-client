@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://YOUR-API-HOST/api/:path*" },
-    { "source": "/uploads/:path*", "destination": "https://YOUR-API-HOST/uploads/:path*" },
+    { "source": "/api/:path*", "destination": "https://acme-server-op7u.onrender.com/api/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://acme-server-op7u.onrender.com/uploads/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
