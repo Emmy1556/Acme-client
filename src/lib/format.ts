@@ -31,7 +31,7 @@ export const LISTING_BADGE: Record<ListingType, string> = {
 
 export const capitalize = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
-/** Server returns `/uploads/...` for locally stored images. */
+/** Local dev uploads come back as `/uploads/...`; Cloudinary uploads are full https URLs and pass through. */
 export const imageUrl = (url?: string) => {
   if (!url) return FALLBACK_IMAGE;
   return url.startsWith("/uploads") ? `${API_ORIGIN}${url}` : url;

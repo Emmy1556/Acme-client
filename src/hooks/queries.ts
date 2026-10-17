@@ -137,7 +137,7 @@ export function useUploadImages() {
     mutationFn: async (files: File[]) => {
       const form = new FormData();
       files.forEach((f) => form.append("images", f));
-      return (await api.post<Envelope<{ url: string }[]>>("/uploads", form)).data.data;
+      return (await api.post<Envelope<{ url: string; publicId?: string }[]>>("/uploads", form)).data.data;
     },
   });
 }
