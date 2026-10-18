@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/DashboardLayout";
 import { Badge, EmptyState, Pagination, Spinner } from "@/components/ui/Feedback";
 import { Select } from "@/components/ui/Field";
 import { useInquiries, useUpdateInquiry } from "@/hooks/queries";
-import { timeAgo } from "@/lib/format";
+import { timeAgo, formatPrice } from "@/lib/format";
 import type { Inquiry } from "@/lib/types";
 
 const TONE = { new: "gold", read: "blue", closed: "gray" } as const;
@@ -45,6 +45,12 @@ export default function Inquiries() {
                         <Link to={`/properties/${q.property.slug}`} className="text-brand-600 hover:underline">
                           {q.property.title}
                         </Link>
+                        {q.plot && (
+                          <span className="ml-1.5 rounded bg-brand-50 px-1.5 py-0.5 font-semibold text-brand-700">
+                            {q.plot.size.toLocaleString()} sqm plot · {formatPrice(q.plot.price)}
+                            {q.plot.paymentPlan ? ` · ${q.plot.paymentPlan}` : ""}
+                          </span>
+                        )}
                       </>
                     )}
                     {!q.property && q.subject && ` · ${q.subject}`}

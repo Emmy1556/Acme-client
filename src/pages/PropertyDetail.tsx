@@ -6,6 +6,7 @@ import {
   Bath,
   BedDouble,
   Car,
+  CalendarClock,
   CheckCircle2,
   Expand,
   ChevronLeft,
@@ -24,12 +25,25 @@ import {
 } from "lucide-react";
 import { useProperty, useSendInquiry } from "@/hooks/queries";
 import { errorMessage } from "@/lib/api";
-import { FALLBACK_IMAGE, LISTING_BADGE, capitalize, imageUrl, locationLabel, priceLabel } from "@/lib/format";
-import type { Property } from "@/lib/types";
+import {
+  FALLBACK_IMAGE,
+  LISTING_BADGE,
+  SOLD_LABEL,
+  capitalize,
+  formatPrice,
+  hasPriceRange,
+  imageUrl,
+  locationLabel,
+  openPlots,
+  priceLabel,
+  sizeLabel,
+  sqm,
+} from "@/lib/format";
+import type { Plot, Property } from "@/lib/types";
 import { Badge, EmptyState, Spinner, StatusBadge } from "@/components/ui/Feedback";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Field";
-import { PropertyCard } from "@/components/PropertyCard";
+import { Input, Select, Textarea } from "@/components/ui/Field";
+import { PropertyCard, SoldRibbon } from "@/components/PropertyCard";
 import { WhatsAppLink } from "@/components/WhatsAppButton";
 import { CONTACT } from "@/lib/constants";
 import { FormattedText } from "@/components/FormattedText";
@@ -75,9 +89,10 @@ function Gallery({ p }: { p: Property }) {
             src={imageUrl(images[active]?.url)}
             alt={p.title}
             onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)}
-            className="size-full object-cover"
+            className="size-full object-cover object-right-bottom"
           />
         </button>
+        {p.isSold && <SoldRibbon large label={SOLD_LABEL[p.listingType]} />}
         {count > 1 && (
           <>
             <button type="button" onClick={() => go(-1)} className={`${arrow} left-3`} aria-label="Previous photo">
@@ -175,19 +190,28 @@ function Fact({ icon: Icon, label, value }: { icon: typeof Ruler; label: string;
   );
 }
 
-function EnquiryCard({ p }: { p: Property }) {
+const plotText = (x: Plot) => `${sqm(x.size)} plot (${formatPrice(x.price)})`;
+
+function EnquiryCard({ p, plotId, onPlotChange }: { p: Property; plotId: string; onPlotChange: (id: string) => void }) {
   const send = useSendInquiry();
+  const plots = openPlots(p);
+  const plot = plots.find((x) => x._id === plotId);
   const propertyUrl = typeof window === "undefined" ? "" : window.location.href;
-  const waMessage = `Hello Acme Homes, I'm interested in "${p.title}" (${priceLabel(p)}, ${locationLabel(p)}). ${propertyUrl}`;
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    message: `Hello, I'm interested in "${p.title}". Please share more details.`,
-  });
+  const waMessage = plot
+    ? `Hello Acme Homes, I'm interested in the ${plotText(plot)} at "${p.title}", ${locationLabel(p)}. ${propertyUrl}`
+    : `Hello Acme Homes, I'm interested in "${p.title}" (${priceLabel(p)}, ${locationLabel(p)}). ${propertyUrl}`;
+  const defaultMessage = plot
+    ? `Hello, I'm interested in the ${plotText(plot)} at "${p.title}". Please share more details.`
+    : `Hello, I'm interested in "${p.title}". Please share more details.`;
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: defaultMessage });
+  // Follow the chosen plot size in the message until the visitor types their own.
+  const [messageEdited, setMessageEdited] = useState(false);
+  useEffect(() => {
+    if (!messageEdited) setForm((f) => ({ ...f, message: defaultMessage }));
+  }, [defaultMessage, messageEdited]);
 
   return (
-    <aside className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:sticky lg:top-28">
+    <aside id="enquiry" className="scroll-mt-28 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:sticky lg:top-28">
       <div className="mb-5 flex items-center gap-3 border-b border-gray-100 pb-5">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-600">
           <ShieldCheck className="size-6 text-gold-300" />
@@ -213,7 +237,13 @@ function EnquiryCard({ p }: { p: Property }) {
         onSubmit={(e) => {
           e.preventDefault();
           send.mutate(
-            { ...form, phone: form.phone || undefined, property: p._id, subject: `Enquiry: ${p.title}` },
+            {
+              ...form,
+              phone: form.phone || undefined,
+              property: p._id,
+              plotId: plot?._id,
+              subject: plot ? `Enquiry: ${p.title} — ${sqm(plot.size)}` : `Enquiry: ${p.title}`,
+            },
             {
               onSuccess: (res) => {
                 toast.success(res.message ?? "Enquiry sent");
@@ -224,10 +254,27 @@ function EnquiryCard({ p }: { p: Property }) {
           );
         }}
       >
+        {plots.length > 1 && (
+          <Select aria-label="Plot size" value={plotId} onChange={(e) => onPlotChange(e.target.value)}>
+            <option value="">Plot size: not sure yet</option>
+            {plots.map((x) => (
+              <option key={x._id} value={x._id}>
+                {sqm(x.size)} — {formatPrice(x.price)}
+              </option>
+            ))}
+          </Select>
+        )}
         <Input required placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <Input required type="email" placeholder="Email address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <Input placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <Textarea required value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+        <Textarea
+          required
+          value={form.message}
+          onChange={(e) => {
+            setMessageEdited(true);
+            setForm({ ...form, message: e.target.value });
+          }}
+        />
         <Button type="submit" className="w-full" loading={send.isPending}>
           Send enquiry
         </Button>
@@ -239,9 +286,102 @@ function EnquiryCard({ p }: { p: Property }) {
   );
 }
 
+/** "Available plot sizes" table for land with several sizes (or payment plans). */
+function PlotTable({ p, onEnquire }: { p: Property; onEnquire: (id: string) => void }) {
+  const plots = p.plots ?? [];
+  const showPlans = plots.some((x) => x.paymentPlan);
+  return (
+    <section className="mt-10">
+      <h2 className="mb-1 text-xl font-bold">Available plot sizes</h2>
+      <p className="mb-4 text-sm text-gray-500">Pick the size that suits you — our team will take it from there.</p>
+      <div className="overflow-hidden rounded-xl bg-white ring-1 ring-gray-200">
+        <ul className="divide-y divide-gray-100">
+          {plots.map((x) => (
+            <li
+              key={x._id ?? x.size}
+              className={`flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3.5 sm:px-5 ${x.isSoldOut ? "bg-gray-50" : ""}`}
+            >
+              <div className="min-w-24">
+                <p className={`text-base font-bold ${x.isSoldOut ? "text-gray-400 line-through" : "text-gray-900"}`}>{sqm(x.size)}</p>
+              </div>
+              <div className="min-w-32">
+                <p className={`text-base font-extrabold ${x.isSoldOut ? "text-gray-400 line-through" : "text-brand-600"}`}>
+                  {formatPrice(x.price, p.currency)}
+                </p>
+              </div>
+              {showPlans && (
+                <p className="min-w-0 flex-1 basis-48 text-sm text-gray-600">
+                  {x.paymentPlan ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarClock className="size-4 shrink-0 text-brand-500" /> {x.paymentPlan}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">Outright payment</span>
+                  )}
+                </p>
+              )}
+              <div className="ml-auto flex items-center gap-2">
+                {x.isSoldOut ? (
+                  <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold tracking-wide text-red-600 uppercase ring-1 ring-red-200">
+                    Sold out
+                  </span>
+                ) : (
+                  <>
+                    <WhatsAppLink
+                      label="WhatsApp"
+                      className="h-8 px-3 text-xs"
+                      message={`Hello Acme Homes, I'm interested in the ${plotText(x)} at "${p.title}", ${locationLabel(p)}. ${typeof window === "undefined" ? "" : window.location.href}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => x._id && onEnquire(x._id)}
+                      className={buttonClass("outline", "sm", "h-8 text-xs")}
+                    >
+                      Enquire
+                    </button>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/** Replaces the enquiry form once a property is sold: no enquiries, but a route to similar ones. */
+function SoldCard({ p }: { p: Property }) {
+  const label = SOLD_LABEL[p.listingType].toLowerCase();
+  const browse = p.category === "land" ? "/lands" : "/buildings";
+  return (
+    <aside className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 lg:sticky lg:top-28">
+      <div className="bg-red-600 px-6 py-4 text-white">
+        <p className="text-xs font-semibold tracking-widest uppercase opacity-90">Deal closed</p>
+        <p className="mt-1 text-xl font-extrabold">This property has been {label}</p>
+      </div>
+      <div className="space-y-4 p-6">
+        <p className="text-sm text-gray-600">
+          Acme Homes closed this deal{p.soldAt ? ` in ${new Date(p.soldAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}` : ""}.
+          Looking for something similar? Our team can help you find it.
+        </p>
+        <Link to={browse} className={buttonClass("primary", "md", "w-full")}>
+          Browse available {p.category === "land" ? "lands" : "properties"}
+        </Link>
+        <WhatsAppLink
+          className="w-full"
+          label="Ask about similar properties"
+          message={`Hello Acme Homes, I saw "${p.title}" in ${locationLabel(p)} has been ${label}. Do you have anything similar?`}
+        />
+      </div>
+    </aside>
+  );
+}
+
 export default function PropertyDetail() {
   const { slug } = useParams();
   const { data, isLoading, isError } = useProperty(slug);
+  const [plotId, setPlotId] = useState("");
 
   if (isLoading) return <Spinner className="min-h-dvh pt-20" />;
   if (isError || !data)
@@ -287,7 +427,8 @@ export default function PropertyDetail() {
                 <div className="mb-2 flex flex-wrap gap-2">
                   <Badge tone="green">{isLand ? capitalize(p.landUse) || "Land" : LISTING_BADGE[p.listingType]}</Badge>
                   {p.buildingType && <Badge>{capitalize(p.buildingType)}</Badge>}
-                  {p.isFeatured && <Badge tone="gold">Featured</Badge>}
+                  {p.isFeatured && !p.isSold && <Badge tone="gold">Featured</Badge>}
+                  {p.isSold && <Badge tone="red">{SOLD_LABEL[p.listingType]}</Badge>}
                 </div>
                 <h1 className="text-3xl font-bold">{p.title}</h1>
                 <p className="mt-2 flex items-center gap-1.5 text-gray-500">
@@ -295,7 +436,14 @@ export default function PropertyDetail() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-extrabold text-brand-600">{priceLabel(p)}</p>
+                {p.isSold ? (
+                  <p className="text-3xl font-extrabold text-red-600">{SOLD_LABEL[p.listingType]}</p>
+                ) : (
+                  <p className="text-3xl font-extrabold text-brand-600">
+                    {hasPriceRange(p) && <span className="mr-1.5 text-base font-semibold text-gray-500">From</span>}
+                    {priceLabel(p)}
+                  </p>
+                )}
                 <p className="mt-1 flex items-center justify-end gap-1 text-xs text-gray-400">
                   <Eye className="size-3.5" /> {p.views} views
                 </p>
@@ -305,9 +453,13 @@ export default function PropertyDetail() {
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {isLand ? (
                 <>
-                  <Fact icon={Ruler} label="Size" value={p.size ? `${p.size.toLocaleString()} sqm` : undefined} />
+                  <Fact icon={Ruler} label={p.maxSize ? "Plot sizes" : "Size"} value={sizeLabel(p)} />
                   <Fact icon={LandPlot} label="Land use" value={capitalize(p.landUse)} />
-                  <Fact icon={FileCheck2} label="Title document" value={p.titleDocument} />
+                  <Fact
+                    icon={FileCheck2}
+                    label={p.titleDocuments && p.titleDocuments.length > 1 ? "Title documents" : "Title document"}
+                    value={p.titleDocuments?.join(", ")}
+                  />
                 </>
               ) : (
                 <>
@@ -320,6 +472,16 @@ export default function PropertyDetail() {
                 </>
               )}
             </div>
+
+            {isLand && !p.isSold && p.plots && (p.plots.length > 1 || p.plots.some((x) => x.paymentPlan)) && (
+              <PlotTable
+                p={p}
+                onEnquire={(id) => {
+                  setPlotId(id);
+                  document.getElementById("enquiry")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              />
+            )}
 
             <section className="mt-10">
               <h2 className="mb-3 text-xl font-bold">Description</h2>
@@ -341,7 +503,7 @@ export default function PropertyDetail() {
           </div>
 
           <div>
-            <EnquiryCard p={p} />
+            {p.isSold ? <SoldCard p={p} /> : <EnquiryCard p={p} plotId={plotId} onPlotChange={setPlotId} />}
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { api, cleanParams } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
 import type {
   ApprovalStatus,
+  Category,
   Inquiry,
   ListingStats,
   Paginated,
@@ -55,6 +56,7 @@ export function useSendInquiry() {
       subject?: string;
       message: string;
       property?: string;
+      plotId?: string;
     }) => (await api.post<Envelope<{ id: string }>>("/inquiries", body)).data,
   });
 }
@@ -132,13 +134,32 @@ export function useFeatureProperty() {
   });
 }
 
+/** Owner or admin marks a listing sold (shown with a red badge) or available again. */
+export function useMarkSold() {
+  const invalidate = useInvalidateProperties();
+  return useMutation({
+    mutationFn: async ({ id, isSold }: { id: string; isSold: boolean }) => api.patch(`/properties/${id}/sold`, { isSold }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Building photos get the watermark; land photos (category "land") don't. */
 export function useUploadImages() {
   return useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: async ({ files, category }: { files: File[]; category: Category }) => {
       const form = new FormData();
       files.forEach((f) => form.append("images", f));
-      return (await api.post<Envelope<{ url: string; publicId?: string }[]>>("/uploads", form)).data.data;
+      return (await api.post<Envelope<{ url: string; publicId?: string }[]>>("/uploads", form, { params: { category } })).data.data;
     },
+  });
+}
+
+/** Owner or admin sets which plot sizes are sold out (all of them = listing shows as sold). */
+export function useSetPlotsSoldOut() {
+  const invalidate = useInvalidateProperties();
+  return useMutation({
+    mutationFn: async ({ id, soldOut }: { id: string; soldOut: string[] }) => api.patch(`/properties/${id}/plots`, { soldOut }),
+    onSuccess: invalidate,
   });
 }
 

@@ -27,6 +27,16 @@ export interface PropertyOwner {
   isVerified?: boolean;
 }
 
+/** One size/price option on a land listing. */
+export interface Plot {
+  _id?: string;
+  size: number;
+  price: number;
+  isSoldOut?: boolean;
+  /** Free text, e.g. "₦300k deposit, balance over 6 months". */
+  paymentPlan?: string;
+}
+
 export interface Property {
   _id: string;
   title: string;
@@ -46,7 +56,10 @@ export interface Property {
   parking?: number;
   furnished?: boolean;
   landUse?: string;
-  titleDocument?: string;
+  titleDocuments?: string[];
+  /** Land with several sizes. When set, `price` = cheapest size still available and `size`/`maxSize` = range. */
+  plots?: Plot[];
+  maxSize?: number;
   features: string[];
   images: { url: string; publicId?: string }[];
   /** Only present on admin dashboard responses — public pages never receive it. */
@@ -57,6 +70,9 @@ export interface Property {
   rejectionReason?: string;
   isFeatured: boolean;
   isAvailable: boolean;
+  /** Sold / let: still shown publicly, with a red badge. */
+  isSold?: boolean;
+  soldAt?: string;
   views: number;
   createdAt: string;
   updatedAt: string;
@@ -75,6 +91,8 @@ export interface Inquiry {
   subject?: string;
   message: string;
   property?: { _id: string; title: string; slug: string };
+  /** The plot size the enquiry is about (snapshot taken when it was sent). */
+  plot?: { size: number; price: number; paymentPlan?: string };
   status: "new" | "read" | "closed";
   createdAt: string;
 }
