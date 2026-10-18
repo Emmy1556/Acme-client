@@ -98,7 +98,7 @@ export interface PropertyFilters {
   q?: string;
   featured?: boolean;
   status?: ApprovalStatus;
-  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "popular";
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "popular" | "featured";
   page?: number;
   limit?: number;
 }

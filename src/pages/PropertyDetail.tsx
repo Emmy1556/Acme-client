@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import {
@@ -7,6 +7,9 @@ import {
   BedDouble,
   Car,
   CheckCircle2,
+  Expand,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   FileCheck2,
   Home as HomeIcon,
@@ -17,6 +20,7 @@ import {
   Ruler,
   ShieldCheck,
   Sofa,
+  X,
 } from "lucide-react";
 import { useProperty, useSendInquiry } from "@/hooks/queries";
 import { errorMessage } from "@/lib/api";
@@ -28,32 +32,130 @@ import { Input, Textarea } from "@/components/ui/Field";
 import { PropertyCard } from "@/components/PropertyCard";
 import { WhatsAppLink } from "@/components/WhatsAppButton";
 import { CONTACT } from "@/lib/constants";
+import { FormattedText } from "@/components/FormattedText";
 
 function Gallery({ p }: { p: Property }) {
   const [active, setActive] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
   const images = p.images.length ? p.images : [{ url: "" }];
+  const count = images.length;
+  const go = (step: number) => setActive((i) => (i + step + count) % count);
+
+  // Full-screen viewer: arrow keys / Esc, and stop the page scrolling underneath.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") go(1);
+    };
+    document.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [fullscreen, count]);
+
+  const arrow =
+    "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-800 shadow-md transition hover:bg-white";
+
   return (
     <div>
-      <div className="aspect-[16/10] overflow-hidden rounded-xl bg-brand-50">
-        <img
-          src={imageUrl(images[active]?.url)}
-          alt={p.title}
-          onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)}
-          className="size-full object-cover"
-        />
+      {/* Fills the frame (object-cover). The watermark is centred, so cropping never hides it. */}
+      <div className="group relative aspect-[16/10] overflow-hidden rounded-xl bg-brand-50">
+        <button
+          type="button"
+          onClick={() => p.images.length && setFullscreen(true)}
+          className="block size-full cursor-zoom-in"
+          aria-label="View photo full screen"
+        >
+          <img
+            src={imageUrl(images[active]?.url)}
+            alt={p.title}
+            onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)}
+            className="size-full object-cover"
+          />
+        </button>
+        {count > 1 && (
+          <>
+            <button type="button" onClick={() => go(-1)} className={`${arrow} left-3`} aria-label="Previous photo">
+              <ChevronLeft className="size-5" />
+            </button>
+            <button type="button" onClick={() => go(1)} className={`${arrow} right-3`} aria-label="Next photo">
+              <ChevronRight className="size-5" />
+            </button>
+          </>
+        )}
+        {p.images.length > 0 && (
+          <span className="pointer-events-none absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white tabular-nums">
+            <Expand className="size-3.5" />
+            {active + 1} / {count}
+          </span>
+        )}
       </div>
-      {images.length > 1 && (
-        <div className="mt-3 grid grid-cols-5 gap-2">
+
+      {count > 1 && (
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {images.map((img, i) => (
             <button
               key={img.url + i}
               onClick={() => setActive(i)}
-              className={`aspect-[4/3] overflow-hidden rounded-lg ring-2 ${i === active ? "ring-brand-600" : "ring-transparent opacity-70 hover:opacity-100"}`}
+              className={`aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg ring-2 ring-inset sm:w-28 ${i === active ? "ring-brand-600" : "ring-transparent opacity-70 hover:opacity-100"}`}
               aria-label={`Show image ${i + 1}`}
             >
-              <img src={imageUrl(img.url)} alt="" onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)} className="size-full object-cover" />
+              <img src={imageUrl(img.url)} alt="" loading="lazy" onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)} className="size-full object-cover" />
             </button>
           ))}
+        </div>
+      )}
+
+      {fullscreen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 sm:p-10"
+          onClick={() => setFullscreen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo viewer"
+        >
+          <img
+            src={imageUrl(images[active]?.url)}
+            alt={p.title}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-full max-w-full rounded-lg object-contain"
+          />
+          <button
+            type="button"
+            onClick={() => setFullscreen(false)}
+            className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            aria-label="Close"
+          >
+            <X className="size-6" />
+          </button>
+          {count > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => (e.stopPropagation(), go(-1))}
+                className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20 sm:left-6"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft className="size-6" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => (e.stopPropagation(), go(1))}
+                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20 sm:right-6"
+                aria-label="Next photo"
+              >
+                <ChevronRight className="size-6" />
+              </button>
+            </>
+          )}
+          <span className="absolute bottom-5 left-1/2 -translate-x-1/2 text-sm text-white/80 tabular-nums">
+            {active + 1} / {count}
+          </span>
         </div>
       )}
     </div>
@@ -221,7 +323,7 @@ export default function PropertyDetail() {
 
             <section className="mt-10">
               <h2 className="mb-3 text-xl font-bold">Description</h2>
-              <p className="whitespace-pre-line leading-relaxed text-gray-600">{p.description}</p>
+              <FormattedText text={p.description} />
             </section>
 
             {p.features.length > 0 && (

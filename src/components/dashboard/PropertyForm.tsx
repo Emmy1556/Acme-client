@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { clsx } from "clsx";
-import { Building2, ImagePlus, LandPlot, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Building2, ImagePlus, LandPlot, Loader2, Plus, Star, Trash2, X } from "lucide-react";
 import type { Category, ListingType, PricePeriod, Property } from "@/lib/types";
 import { BUILDING_TYPES, LAND_USES, LISTING_TYPES, PRICE_PERIODS, TITLE_DOCUMENTS } from "@/lib/constants";
 import { capitalize, imageUrl } from "@/lib/format";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { RichTextarea } from "@/components/ui/RichTextarea";
 import { useUploadImages, type PropertyInput } from "@/hooks/queries";
 import { errorMessage } from "@/lib/api";
 
@@ -98,6 +99,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Must match the backend: `.max(25)` in property.schema.ts and `files: 10` in middleware/upload.ts. */
+const MAX_PHOTOS = 25;
+const UPLOAD_BATCH = 10;
+
 export function PropertyForm({
   initial,
   submitting,
@@ -113,6 +118,7 @@ export function PropertyForm({
   const [featureDraft, setFeatureDraft] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const upload = useUploadImages();
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
   const isLand = f.category === "land";
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }));
@@ -128,15 +134,35 @@ export function PropertyForm({
     setFeatureDraft("");
   };
 
-  const onFiles = (files: FileList | null) => {
-    if (!files?.length) return;
-    const list = Array.from(files).slice(0, 15 - f.images.length);
-    upload.mutate(list, {
-      onSuccess: (uploaded) => set("images", [...f.images, ...uploaded]),
-      onError: (e) => toast.error(errorMessage(e, "Upload failed")),
-    });
+  /** Uploads in batches of UPLOAD_BATCH (the server's per-request limit), adding each batch as it lands. */
+  const onFiles = async (files: FileList | null) => {
+    const picked = Array.from(files ?? []);
     if (fileRef.current) fileRef.current.value = "";
+    if (!picked.length) return;
+    const room = MAX_PHOTOS - f.images.length;
+    const list = picked.slice(0, room);
+    if (picked.length > room) toast.info(`Only ${room} more photo${room === 1 ? "" : "s"} can be added (max ${MAX_PHOTOS}).`);
+    if (!list.length) return;
+
+    setUploading({ done: 0, total: list.length });
+    try {
+      for (let i = 0; i < list.length; i += UPLOAD_BATCH) {
+        const uploaded = await upload.mutateAsync(list.slice(i, i + UPLOAD_BATCH));
+        setF((s) => ({ ...s, images: [...s.images, ...uploaded].slice(0, MAX_PHOTOS) }));
+        setUploading({ done: Math.min(i + UPLOAD_BATCH, list.length), total: list.length });
+      }
+    } catch (e) {
+      toast.error(errorMessage(e, "Upload failed"));
+    } finally {
+      setUploading(null);
+    }
   };
+
+  const makeCover = (url: string) =>
+    setF((s) => {
+      const img = s.images.find((x) => x.url === url);
+      return img ? { ...s, images: [img, ...s.images.filter((x) => x.url !== url)] } : s;
+    });
 
   return (
     <form
@@ -202,7 +228,14 @@ export function PropertyForm({
             </Field>
           </div>
           <Field label="Description" className="sm:col-span-2">
-            <Textarea required minLength={10} maxLength={5000} rows={6} {...bind("description")} />
+            <RichTextarea
+              required
+              minLength={10}
+              maxLength={5000}
+              value={f.description}
+              onChange={(v) => set("description", v)}
+              placeholder="Describe the property: layout, finishing, neighbourhood, what makes it stand out…"
+            />
           </Field>
         </div>
       </Section>
@@ -326,30 +359,44 @@ export function PropertyForm({
           {f.images.map((img, i) => (
             <div key={img.url} className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
               <img src={imageUrl(img.url)} alt="" className="size-full object-cover" />
-              {i === 0 && <span className="absolute left-1.5 top-1.5 rounded bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold text-gold-300">COVER</span>}
+              {i === 0 ? (
+                <span className="absolute left-1.5 top-1.5 rounded bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold text-gold-300">COVER</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => makeCover(img.url)}
+                  className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-white/90 px-1.5 py-1 text-[11px] font-semibold text-brand-700 transition hover:bg-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                >
+                  <Star className="size-3" />
+                  Set as cover
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => set("images", f.images.filter((x) => x.url !== img.url))}
-                className="absolute right-1.5 top-1.5 rounded-md bg-white/90 p-1 text-red-600 opacity-0 transition group-hover:opacity-100"
+                className="absolute right-1.5 top-1.5 rounded-md bg-white/90 p-1 text-red-600 transition hover:bg-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                 aria-label="Remove photo"
               >
                 <Trash2 className="size-3.5" />
               </button>
             </div>
           ))}
-          {f.images.length < 15 && (
+          {f.images.length < MAX_PHOTOS && (
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              disabled={upload.isPending}
+              disabled={!!uploading}
               className="flex aspect-[4/3] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600"
             >
-              {upload.isPending ? <Loader2 className="size-6 animate-spin" /> : <ImagePlus className="size-6" />}
-              {upload.isPending ? "Uploading…" : "Add photos"}
+              {uploading ? <Loader2 className="size-6 animate-spin" /> : <ImagePlus className="size-6" />}
+              {uploading ? `Uploading ${uploading.done}/${uploading.total}…` : "Add photos"}
             </button>
           )}
         </div>
-        <p className="mt-3 text-xs text-gray-400">JPEG, PNG, WEBP or AVIF · up to 5MB each · the first photo is the cover.</p>
+        <p className="mt-3 text-xs text-gray-400">
+          {f.images.length}/{MAX_PHOTOS} photos · JPEG, PNG, WEBP or AVIF · up to 8MB each · the cover photo is shown first
+          everywhere. Every photo is watermarked automatically.
+        </p>
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={(e) => onFiles(e.target.files)} />
       </Section>
 
@@ -358,7 +405,7 @@ export function PropertyForm({
           <input type="checkbox" checked={f.isAvailable} onChange={(e) => set("isAvailable", e.target.checked)} className="size-4 accent-brand-600" />
           Available (uncheck when sold / let)
         </label>
-        <Button type="submit" size="lg" loading={submitting} disabled={upload.isPending}>
+        <Button type="submit" size="lg" loading={submitting} disabled={!!uploading}>
           {submitLabel}
         </Button>
       </div>

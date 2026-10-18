@@ -84,7 +84,8 @@ function Hero() {
 }
 
 function FeaturedSection({ category }: { category: "building" | "land" }) {
-  const { data, isLoading } = useProperties({ category, featured: true, limit: 6 });
+  // Featured listings first, then the newest ones fill the remaining slots.
+  const { data, isLoading } = useProperties({ category, sort: "featured", limit: 6 });
   const isLand = category === "land";
 
   return (
@@ -92,7 +93,7 @@ function FeaturedSection({ category }: { category: "building" | "land" }) {
       <div className="container-page">
         <SectionHeading
           title={isLand ? "Featured Land Properties" : "Featured House Properties"}
-          subtitle={`Handpicked selection of Acme's most exclusive ${isLand ? "lands" : "homes"}`}
+          subtitle={`Handpicked and newly listed ${isLand ? "lands" : "homes"} from Acme`}
           action={
             <Link to={isLand ? "/lands" : "/buildings"} className={buttonClass("outline", "md")}>
               View all properties <ArrowRight className="size-4" />
@@ -104,7 +105,7 @@ function FeaturedSection({ category }: { category: "building" | "land" }) {
           {data?.items.map((p) => <PropertyCard key={p._id} p={p} />)}
         </div>
         {data && data.items.length === 0 && (
-          <EmptyState title="No featured listings yet" message="Check back soon — new properties are added regularly." />
+          <EmptyState title="No listings yet" message="Check back soon — new properties are added regularly." />
         )}
       </div>
     </section>
