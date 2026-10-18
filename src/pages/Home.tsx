@@ -142,9 +142,10 @@ function AgentCta() {
   return (
     <section className="py-20">
       <div className="container-page">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-gold-100 p-8 sm:p-12 lg:flex-row lg:items-center">
-          <div className="flex items-start gap-4">
-            <ShieldCheck className="mt-1 size-10 shrink-0 text-brand-600" />
+        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-gold-100 p-6 sm:p-12 lg:flex-row lg:items-center">
+          {/* Icon above the text on phones so the copy gets the full width. */}
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
+            <ShieldCheck className="size-10 shrink-0 text-brand-600 sm:mt-1" />
             <div>
               <h2 className="text-2xl font-bold">Are you an agent or landlord?</h2>
               <p className="mt-2 max-w-xl text-gray-600">
@@ -153,7 +154,7 @@ function AgentCta() {
               </p>
             </div>
           </div>
-          <Link to="/register?as=agent" className={buttonClass("primary", "lg")}>
+          <Link to="/register?as=agent" className={buttonClass("primary", "lg", "w-full shrink-0 sm:w-auto")}>
             List your property
           </Link>
         </div>

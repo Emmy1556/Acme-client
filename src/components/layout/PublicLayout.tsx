@@ -1,17 +1,20 @@
-import { Outlet, ScrollRestoration } from "react-router";
+import { Outlet, ScrollRestoration, useMatch } from "react-router";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppButton";
 
 export function PublicLayout() {
+  // Property pages have their own contact bar on phones/tablets, so skip the floating
+  // button there (it covered the title) and leave room at the bottom for the bar.
+  const onProperty = useMatch("/properties/:slug");
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className={onProperty ? "flex min-h-dvh flex-col pb-[76px] lg:pb-0" : "flex min-h-dvh flex-col"}>
       <Navbar />
       <main className="flex-1">
         <Outlet />
       </main>
       <Footer />
-      <WhatsAppFloat />
+      {!onProperty && <WhatsAppFloat />}
       <ScrollRestoration />
     </div>
   );

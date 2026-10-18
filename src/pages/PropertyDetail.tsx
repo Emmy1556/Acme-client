@@ -78,7 +78,7 @@ function Gallery({ p }: { p: Property }) {
   return (
     <div>
       {/* Fills the frame (object-cover). The watermark is centred, so cropping never hides it. */}
-      <div className="group relative aspect-[16/10] overflow-hidden rounded-xl bg-brand-50">
+      <div className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-brand-50 sm:aspect-[16/10]">
         <button
           type="button"
           onClick={() => p.images.length && setFullscreen(true)}
@@ -350,6 +350,49 @@ function PlotTable({ p, onEnquire }: { p: Property; onEnquire: (id: string) => v
   );
 }
 
+/**
+ * Phones/tablets: the enquiry card sits far below the photos and details, so keep
+ * Call / WhatsApp / Enquire pinned to the bottom of the screen.
+ */
+function MobileContactBar({ p }: { p: Property }) {
+  const url = typeof window === "undefined" ? "" : window.location.href;
+  const bar =
+    "fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden";
+  if (p.isSold) {
+    return (
+      <div className={bar}>
+        <div className="mx-auto flex max-w-xl items-center gap-3">
+          <p className="min-w-0 flex-1 text-sm font-semibold text-red-600">This property has been {SOLD_LABEL[p.listingType].toLowerCase()}</p>
+          <Link to={p.category === "land" ? "/lands" : "/buildings"} className={buttonClass("primary", "md", "shrink-0")}>
+            See similar
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={bar}>
+      <div className="mx-auto grid max-w-xl grid-cols-3 gap-2">
+        <a href={`tel:${CONTACT.phone}`} className={buttonClass("gold", "md", "px-2")}>
+          <Phone className="size-4" /> Call
+        </a>
+        <WhatsAppLink
+          label="WhatsApp"
+          className="px-2"
+          message={`Hello Acme Homes, I'm interested in "${p.title}" (${priceLabel(p)}, ${locationLabel(p)}). ${url}`}
+        />
+        <button
+          type="button"
+          className={buttonClass("primary", "md", "px-2")}
+          onClick={() => document.getElementById("enquiry")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        >
+          <Mail className="size-4" /> Enquire
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Replaces the enquiry form once a property is sold: no enquiries, but a route to similar ones. */
 function SoldCard({ p }: { p: Property }) {
   const label = SOLD_LABEL[p.listingType].toLowerCase();
@@ -418,8 +461,10 @@ export default function PropertyDetail() {
           </div>
         )}
 
+        {/* min-w-0: grid columns default to their content's width, so the scrollable
+            thumbnail strip would otherwise stretch the page wider than the phone. */}
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+          <div className="min-w-0 lg:col-span-2">
             <Gallery p={p} />
 
             <div className="mt-8 flex flex-wrap items-start justify-between gap-4">
@@ -430,21 +475,21 @@ export default function PropertyDetail() {
                   {p.isFeatured && !p.isSold && <Badge tone="gold">Featured</Badge>}
                   {p.isSold && <Badge tone="red">{SOLD_LABEL[p.listingType]}</Badge>}
                 </div>
-                <h1 className="text-3xl font-bold">{p.title}</h1>
-                <p className="mt-2 flex items-center gap-1.5 text-gray-500">
-                  <MapPin className="size-4" /> {[p.location.address, locationLabel(p), p.location.state].filter(Boolean).join(", ")}
+                <h1 className="text-2xl leading-tight font-bold sm:text-3xl">{p.title}</h1>
+                <p className="mt-2 flex items-start gap-1.5 text-gray-500">
+                  <MapPin className="mt-1 size-4 shrink-0" /> {[p.location.address, locationLabel(p), p.location.state].filter(Boolean).join(", ")}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 {p.isSold ? (
-                  <p className="text-3xl font-extrabold text-red-600">{SOLD_LABEL[p.listingType]}</p>
+                  <p className="text-2xl font-extrabold text-red-600 sm:text-3xl">{SOLD_LABEL[p.listingType]}</p>
                 ) : (
-                  <p className="text-3xl font-extrabold text-brand-600">
+                  <p className="text-2xl font-extrabold text-brand-600 sm:text-3xl">
                     {hasPriceRange(p) && <span className="mr-1.5 text-base font-semibold text-gray-500">From</span>}
                     {priceLabel(p)}
                   </p>
                 )}
-                <p className="mt-1 flex items-center justify-end gap-1 text-xs text-gray-400">
+                <p className="mt-1 flex items-center gap-1 text-xs text-gray-400 sm:justify-end">
                   <Eye className="size-3.5" /> {p.views} views
                 </p>
               </div>
@@ -502,10 +547,12 @@ export default function PropertyDetail() {
             )}
           </div>
 
-          <div>
+          <div className="min-w-0">
             {p.isSold ? <SoldCard p={p} /> : <EnquiryCard p={p} plotId={plotId} onPlotChange={setPlotId} />}
           </div>
         </div>
+
+        <MobileContactBar p={p} />
 
         {similar.length > 0 && (
           <section className="mt-20">

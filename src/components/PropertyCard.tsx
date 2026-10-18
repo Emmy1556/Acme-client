@@ -119,7 +119,7 @@ export function LandCard({ p }: { p: Property }) {
             </p>
           )}
         </div>
-        <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-gray-100 pt-4">
           {p.isSold ? (
             <span className="text-lg font-bold text-red-600">{SOLD_LABEL[p.listingType]}</span>
           ) : (
@@ -128,8 +128,8 @@ export function LandCard({ p }: { p: Property }) {
               {priceLabel(p)}
             </span>
           )}
-          <span className="flex items-center gap-1 text-xs text-gray-500">
-            <MapPin className="size-3.5" /> {locationLabel(p)}
+          <span className="flex min-w-0 items-center gap-1 text-xs text-gray-500">
+            <MapPin className="size-3.5 shrink-0" /> <span className="truncate">{locationLabel(p)}</span>
           </span>
         </div>
       </div>

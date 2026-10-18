@@ -15,8 +15,9 @@ const QUICK_LINKS = [
 export function Footer() {
   return (
     <footer className="bg-brand-600 text-white">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-3">
-        <div>
+      {/* Tablet: logo full width on top, links + contact side by side (room for the email). */}
+      <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="sm:col-span-2 lg:col-span-1">
           <Logo />
           <p className="mt-4 max-w-xs text-sm text-brand-100">Helping You Own, Grow, and Invest Better.</p>
         </div>
@@ -43,8 +44,9 @@ export function Footer() {
               </a>
             </li>
             <li>
-              <a href={`mailto:${CONTACT.email}`} className="flex items-center gap-3 break-all hover:text-gold-300">
-                <Mail className="size-4 shrink-0 text-gold-300" /> {CONTACT.email}
+              <a href={`mailto:${CONTACT.email}`} className="flex items-center gap-3 hover:text-gold-300">
+                <Mail className="size-4 shrink-0 text-gold-300" />
+                <span className="min-w-0 [overflow-wrap:anywhere]">{CONTACT.email}</span>
               </a>
             </li>
             <li className="flex items-center gap-3">
